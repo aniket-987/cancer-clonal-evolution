@@ -1,45 +1,29 @@
 nextflow.enable.dsl=2
 
-params.primary = "data/primary.bam"
-params.relapse = "data/relapse.bam"
-params.genome  = "data/ref.fa"
-params.outdir  = "results"
+log.info """\
+    C A N C E R   C L O N A L   E V O L U T I O N
+    =============================================
+    input_vaf    : ${params.vaf_data}
+    outdir       : ${params.outdir}
+    """
+    .stripIndent()
 
-process SOMATIC_CALLING {
-    tag "GATK Mutect2"
-    publishDir "${params.outdir}/vcf", mode: 'copy'
+process CLUSTER_VARIANTS {
+    tag "BGMM on VAF data"
 
     input:
-    path primary
-    path relapse
-    path ref
-
-    output:
-    path "somatic_final.vcf"
-
-    script:
-    """
-    gatk Mutect2 -R ${ref} -I ${primary} -I ${relapse} -O somatic_final.vcf
-    """
-}
-
-process CLONAL_DYNAMICS {
-    tag "Deconvolution"
-    publishDir "${params.outdir}/evolution", mode: 'copy'
-
-    input:
-    path vcf
+    path vaf_csv
 
     output:
     path "subclones.csv"
 
     script:
     """
-    python3 ../scripts/clonal_deconvolution.py --input ${vcf}
+    python ${projectDir}/scripts/clonal_deconvolution.py ${vaf_csv}
     """
 }
 
 workflow {
-    vcf_ch = SOMATIC_CALLING(params.primary, params.relapse, params.genome)
-    CLONAL_DYNAMICS(vcf_ch)
+    vaf_ch = Channel.fromPath(params.vaf_data, checkIfExists: true)
+    CLUSTER_VARIANTS(vaf_ch)
 }
