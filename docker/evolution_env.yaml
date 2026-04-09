@@ -1,0 +1,13 @@
+name: cancer-evolution
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.9
+  - r-base=4.2
+  - r-dplyr
+  - scikit-learn
+  - pandas
+  - gatk4
+  - samtools
+  - nextflow
